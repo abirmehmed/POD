@@ -1,4 +1,4 @@
-01: Ownership in Rust is indeed a fascinating and fundamental topic, and I’m excited to dive into your questions! Since you’re curious about how ownership impacts real-world performance compared to garbage-collected languages, the common mistakes people make when learning it, and my personal perspective on its challenges, I’ll address each part clearly and thoroughly.
+# 01: Ownership in Rust is indeed a fascinating and fundamental topic, and I’m excited to dive into your questions! Since you’re curious about how ownership impacts real-world performance compared to garbage-collected languages, the common mistakes people make when learning it, and my personal perspective on its challenges, I’ll address each part clearly and thoroughly.
 
 ---
 
@@ -93,7 +93,7 @@ If you’re diving into ownership, treat the borrower checker as a teacher, not 
 
 ### Wrapping Up
 
-Rust’s ownership model is a game-changer: it offers memory safety and top-tier performance without garbage collection, shining in real-world applications where efficiency is key. Common pitfalls like misunderstanding borrowing or misusing moves are part of the learning process, and my own journey with the borrow checker taught me patience and precision. It’s a fascinating system—challenging at first, but deeply rewarding once you master it!
+# 02 Rust’s ownership model is a game-changer: it offers memory safety and top-tier performance without garbage collection, shining in real-world applications where efficiency is key. Common pitfalls like misunderstanding borrowing or misusing moves are part of the learning process, and my own journey with the borrow checker taught me patience and precision. It’s a fascinating system—challenging at first, but deeply rewarding once you master it!
 
 ***
 
