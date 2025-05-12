@@ -1,1 +1,2 @@
-
+## Ownership in Rust is such a fascinating topic! Since ownership is a fundamental aspect of Rust’s memory management, I might wonder about how it affects real-world performance in comparison to languages with garbage collection. Or maybe—what are some common mistakes people make when first learning ownership? If you're deep into Rust, I'd love to hear your perspective! What’s been your biggest challenge with ownership so far?
+**
