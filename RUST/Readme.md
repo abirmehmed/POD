@@ -97,7 +97,7 @@ If you’re diving into ownership, treat the borrower checker as a teacher, not 
 
 ***
 
-## 02 When designing programs in Rust to minimize ownership-related errors, I take a deliberate approach that leverages Rust's ownership model to ensure safety and efficiency while keeping the code intuitive and maintainable. Ownership-related errors—such as use-after-move, borrow conflicts, or lifetime mismatches—can be challenging, especially for newcomers, but with the right strategies, they become manageable. Below, I’ll outline how I approach program design to avoid these issues and highlight the strategies I prefer, such as borrowing, cloning, or using smart pointers, to make ownership feel natural.
+## 02: When designing programs in Rust to minimize ownership-related errors, I take a deliberate approach that leverages Rust's ownership model to ensure safety and efficiency while keeping the code intuitive and maintainable. Ownership-related errors—such as use-after-move, borrow conflicts, or lifetime mismatches—can be challenging, especially for newcomers, but with the right strategies, they become manageable. Below, I’ll outline how I approach program design to avoid these issues and highlight the strategies I prefer, such as borrowing, cloning, or using smart pointers, to make ownership feel natural.
 
 ---
 
@@ -201,7 +201,7 @@ Among the tools Rust provides—borrowing, cloning, and smart pointers—I have 
 
 My approach to designing Rust programs focuses on minimizing ownership-related errors by:  
 - Defaulting to borrowing to avoid unnecessary ownership transfers.  
-- Keeping mutable state minimal to reduce borrow conflicts.  
+- Keep the mutable state minimal to reduce borrow conflicts.  
 - Crafting APIs that favor references over owned values.  
 - Using enums and pattern matching to manage state cleanly.  
 - Refactoring complex code into simpler, ownership-clear pieces.  
