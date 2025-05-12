@@ -1,3 +1,7 @@
+## How does PHP handle variable scope, and what are the differences between global, local, and static variables?
+***
+
+
 ### Key Points
 - PHP handles variable scope with global, local, and static types, each with distinct accessibility and lifetime.
 - Global variables seem accessible everywhere but need special access inside functions; local variables are function-specific; static variables retain values between function calls.
