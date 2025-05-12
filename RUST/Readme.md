@@ -1,4 +1,4 @@
-## 01: Ownership in Rust is indeed a fascinating and fundamental topic, and I’m excited to dive into your questions! Since you’re curious about how ownership impacts real-world performance compared to garbage-collected languages, the common mistakes people make when learning it, and my personal perspective on its challenges, I’ll address each part clearly and thoroughly.
+### 01: Ownership in Rust is indeed a fascinating and fundamental topic, and I’m excited to dive into your questions! Since you’re curious about how ownership impacts real-world performance compared to garbage-collected languages, the common mistakes people make when learning it, and my personal perspective on its challenges, I’ll address each part clearly and thoroughly.
 
 ---
 
@@ -97,7 +97,7 @@ If you’re diving into ownership, treat the borrower checker as a teacher, not 
 
 ***
 
-## 02: When designing programs in Rust to minimize ownership-related errors, I take a deliberate approach that leverages Rust's ownership model to ensure safety and efficiency while keeping the code intuitive and maintainable. Ownership-related errors—such as use-after-move, borrow conflicts, or lifetime mismatches—can be challenging, especially for newcomers, but with the right strategies, they become manageable. Below, I’ll outline how I approach program design to avoid these issues and highlight the strategies I prefer, such as borrowing, cloning, or using smart pointers, to make ownership feel natural.
+### 02: When designing programs in Rust to minimize ownership-related errors, I take a deliberate approach that leverages Rust's ownership model to ensure safety and efficiency while keeping the code intuitive and maintainable. Ownership-related errors—such as use-after-move, borrow conflicts, or lifetime mismatches—can be challenging, especially for newcomers, but with the right strategies, they become manageable. Below, I’ll outline how I approach program design to avoid these issues and highlight the strategies I prefer, such as borrowing, cloning, or using smart pointers, to make ownership feel natural.
 
 ---
 
