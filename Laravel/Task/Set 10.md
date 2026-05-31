@@ -1,0 +1,30 @@
+# Laravel Database Mastery, Performance & Modern Tooling: 10 Questions & 10 Tasks
+
+## 📘 10 Conceptual Questions
+1. **Window Functions & CTEs in Laravel:** When should you use `selectRaw()` with `ROW_NUMBER()`, `RANK()`, or `WITH` clauses vs PHP collection manipulation? How do they impact memory usage and database execution plans?
+2. **Database Partitioning & Large Table Management:** How do range, list, and hash partitioning work in MySQL/PostgreSQL? When does Laravel's query builder support partition pruning, and how do you migrate or archive massive tables without downtime?
+3. **Full-Text Search vs Indexing Strategies:** Compare MySQL `FULLTEXT`, PostgreSQL `tsvector`, and Laravel Scout. When should you bypass Scout and write raw `MATCH() AGAINST()` or `to_tsvector()` queries for performance or relevance tuning?
+4. **Eager Loading Limits & Over-Fetching:** How do you detect N+1 beyond `with()`? Explain `loadMissing()`, `withCount()`, `withAvg()`, and when eager loading actually hurts performance (pulling unnecessary columns, bloating memory, cache misses).
+5. **Query Builder vs Raw SQL Trade-offs:** When should you abandon Eloquent/Builder for raw PDO/prepared statements? How do you safely bind parameters, handle dynamic table/column names, and maintain testability without sacrificing security?
+6. **Concurrency Control & Locking Strategies:** Compare `LOCK IN SHARE MODE`, `FOR UPDATE`, optimistic locking (`version` column), and application-level distributed locks. When does each prevent race conditions vs cause deadlocks?
+7. **Laravel Macros & Mixins Architecture:** How do `Macroable` and `Mixin` traits extend framework classes safely? What are the risks of overriding core methods, and how do you ensure compatibility across Laravel/PHP upgrades?
+8. **Interactive CLI & Console UX Design:** How do you build robust Artisan commands with `choice()`, `table()`, `progressBar()`, and `confirm()`? When should you use `->hidden()` vs public commands, and how do you handle graceful interruption (Ctrl+C)?
+9. **Static Analysis & Automated Refactoring:** How do PHPStan, Rector, and Laravel Pint work together in a modern workflow? Explain rule levels, automatic syntax modernization, and how to integrate them into pre-commit hooks without breaking developer flow.
+10. **Memory Management & Generator Patterns:** How does PHP handle memory in loops with large datasets? Explain `yield`, `chunk()`, `lazy()`, and when to use `DB::cursor()` vs `each()` to prevent `Allowed memory size exhausted` errors in exports or sync jobs.
+
+---
+
+## ️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Window Function Query**<br>Write a query using `ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY price ASC)` to fetch the cheapest product per category. Return as Eloquent collection. Verify with `EXPLAIN`. | Single query returns 1 row per category. No PHP filtering. `EXPLAIN` shows efficient window execution. Results match manual verification. |
+| 2 | **CTE Reporting Endpoint**<br>Create a `WITH sales_summary AS (...)` query that calculates daily revenue, order count, and avg order value. Map results to a DTO. Ensure it runs in <100ms on 10k+ orders. | CTE executes in DB, not PHP. DTO structures data cleanly. Response time <100ms. Pagination/filters apply correctly. |
+| 3 | **N+1 Detection & Remediation**<br>Enable `Model::preventLazyLoading()`. Find 3 N+1 violations in your codebase. Fix with `with()`, `loadMissing()`, or query restructuring. Document before/after query counts. | Zero lazy loading exceptions. Query count drops significantly. Behavior unchanged. Tests pass. |
+| 4 | **Optimistic Locking Implementation**<br>Add `version` column to `products`. Implement `incrementVersion()` and check concurrency on `save()`. Test simultaneous updates. Verify `StaleObjectException` handling. | Concurrent edits fail safely with clear error. Version increments correctly. UI shows conflict message. No lost updates. |
+| 5 | **Raw SQL with Safe Binding**<br>Write a dynamic report query using `DB::select()` with named bindings. Handle dynamic date ranges and filters without SQL injection. Wrap in repository method. Test edge cases. | Zero injection vectors. Bindings used for all variables. Query remains readable. Fakes/mocks work in tests. |
+| 6 | **Macro Extension Design**<br>Add `Macro` to `Collection` for `->currencyFormat('USD')` and to `Builder` for `->whereActive()`. Ensure they chain properly, respect existing scopes, and pass type hints. | Macros chain seamlessly. IDE autocomplete works. Tests verify behavior. No core method conflicts. |
+| 7 | **Interactive Artisan Command**<br>Build `php artisan multimart:import-products` with `table()` preview, `progressBar()`, `confirm()` for dry-run, and `error()` on validation failures. Handle large CSV safely with `fopen()` + `yield`. | Command runs interactively. Progress bar updates smoothly. Ctrl+C cleans up gracefully. Memory stays constant. |
+| 8 | **PHPStan + Rector Pipeline**<br>Install both. Configure to level 8. Run `rector process` to auto-fix modern PHP syntax (readonly classes, constructor promotion, match expressions). Commit fixed code. Add to CI. | Zero PHPStan errors at level 8. Rector modernizes syntax safely. CI blocks non-compliant PRs. Dev workflow uninterrupted. |
+| 9 | **Memory-Safe Data Export**<br>Write a command that exports 100k orders to CSV using `DB::cursor()` and `yield`. Monitor memory with `memory_get_peak_usage()`. Ensure it stays <64MB regardless of dataset size. | Peak memory <64MB. CSV streams to disk. No `memory_limit` errors. Execution time linear, not exponential. |
+| 10| **Full-Text Search Implementation**<br>Add `FULLTEXT` index to `products(name, description)`. Write raw `MATCH() AGAINST()` query with relevance scoring. Compare speed vs `LIKE '%keyword%'` and Scout database driver. | Index created successfully. Relevance ranking works. Query outperforms `LIKE` by >5x. Fallback handling documented. |
