@@ -1,0 +1,30 @@
+# Laravel E-Commerce & Enterprise Patterns: 10 Questions & 10 Tasks
+
+## 📘 10 Conceptual Questions
+1. **State Machines vs Status Strings:** Why should order lifecycles use a state machine pattern instead of simple `status` strings? How do you prevent invalid transitions (e.g., `shipped` → `pending`) and maintain an audit trail?
+2. **CQRS & Read/Write Separation:** What is Command Query Responsibility Segregation? When should you separate read models from write models in Laravel, and how does it impact caching and database indexing strategies?
+3. **JSON Columns vs Normalized Tables:** When should you store structured data (shipping details, custom attributes, cart snapshots) as JSON vs relational tables? How do you query and index JSON columns efficiently in Laravel?
+4. **Idempotency & Webhook Safety:** Why must payment/webhook handlers be idempotent? How does `Cache::lock()`, `Cache::add()`, or idempotency keys prevent duplicate charges or race conditions in production?
+5. **Read Replicas & Replication Lag:** How does Laravel's read/write splitting work? What are the consistency risks with replication lag, and how do you force primary reads for critical paths (checkout, balance checks)?
+6. **Currency, Timezones & Localization Architecture:** How do you handle multi-currency pricing, timezone-aware order timestamps, and locale-specific content without bloating models? Explain `Number::currency()`, `Carbon::now($tz)`, and fallback strategies.
+7. **Observers vs Actions vs Services:** When should business logic live in model observers, dedicated action classes, or service layers? What are the anti-patterns of "fat observers" and how do they break testability?
+8. **Chunking, Cursor Pagination & Memory Safety:** Why does standard pagination leak memory on large datasets? Explain `chunkById()`, cursor pagination, and how to safely process millions of orders without hitting PHP memory limits.
+9. **Laravel Octane & Swoole/RoadRunner:** How does Octane change the request lifecycle? What static-state memory leak pitfalls exist, and when is it genuinely needed vs premature optimization for e-commerce?
+10. **Event Sourcing vs Traditional CRUD:** How does event sourcing differ from state-based persistence? When is it overkill for MultiMart vs when does it solve real problems (audit compliance, replayable order states, debugging)?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Order State Machine**<br>Implement `spatie/laravel-model-states` or custom state pattern. Define transitions: `pending` → `paid` → `processing` → `shipped` → `delivered`. Block invalid moves. Log state history. | Invalid transitions throw exception. History table records every change. Blade shows current state + timeline. Tests verify all valid/invalid paths. |
+| 2 | **JSON Metadata Column**<br>Add `metadata` JSON column to `orders`. Store shipping provider, tracking number, gift notes. Query orders by JSON key/value. Add MySQL/SQLite JSON index. | `where('metadata->shipping_provider', 'fedex')` works efficiently. Index shows in `EXPLAIN`. Eloquent casts to array automatically. Form saves/loads correctly. |
+| 3 | **Idempotent Stripe Webhook**<br>Create `/api/webhooks/stripe` handler. Use `Cache::add('stripe_event_{id}', true, 3600)` to prevent duplicate processing. Verify signature, handle retries, return 200 quickly. | Duplicate events return 200 without reprocessing. Signature verification blocks tampered payloads. Queue job dispatched safely. Postman/cURL tests pass. |
+| 4 | **Read/Write Splitting Config**<br>Configure `database.php` with read/write hosts (can simulate with same connection). Write a test that forces read on replica. Add comment explaining replication lag handling. | `DB::connection()->getName()` shows read/write routing. Critical checkout queries use primary. Test verifies split behavior. Documentation covers lag fallback. |
+| 5 | **Multi-Currency Cart Service**<br>Create `CurrencyService` with cached exchange rates. Convert cart total to user's preferred currency. Format with `Number::currency()`. Store original + converted prices in session/DB. | Cart displays correct symbol/decimals per locale. Conversion uses cached rates. Fallback to USD on failure. No N+1 or redundant API calls. |
+| 6 | **Order Archiving Command**<br>Write `php artisan orders:archive --before="2025-01-01"`. Use `chunkById()` to move old orders to `archived_orders` table. Verify memory stays constant. Log progress. | Memory usage flat during execution. `archived_orders` populated correctly. Original table shrinks. Command idempotent & resumable. |
+| 7 | **CQRS-Style Product Browsing**<br>Split product listing into `ProductQueryHandler` (returns DTOs + cache) and `UpdateProductCommand` (handles validation, events, persistence). Keep controllers under 10 lines. | Browsing uses read-optimized path. Writes go through command layer. Controllers only route + return. Tests verify separation. |
+| 8 | **Multi-Language Catalog**<br>Implement `spatie/laravel-translatable` or JSON-based translations. Store `name`/`description` per locale. Query by active locale. Fallback to default. Add locale switcher middleware. | `Product::first()->translate('fr')->name` works. Routes respect `Accept-Language` or URL prefix. Fallback chain functional. Admin form supports multi-locale input. |
+| 9 | **Octane Memory Leak Prevention**<br>Create a long-running service (e.g., external tax API client, rate limiter). Wrap cleanup in `app()->terminating()` or use `Octane::concurrently()`. Document static-state pitfalls. | No memory growth after 100+ requests handled by Octane. Client resets between requests. Docs explain `$app->forgetInstance()` vs static vars. |
+| 10| **Order Audit Trail**<br>Implement `created`, `updated`, `status_changed` events. Store in `order_audits` table with `user_id`, `old_values`, `new_values`, `ip`, `user_agent`. Query recent changes for support. | Audits capture all mutations. JSON diffs stored efficiently. Admin view shows timeline. Performance impact <2%. GDPR-compliant data retention noted. |
