@@ -1,0 +1,30 @@
+# Laravel Architecture & Domain-Driven Design: 10 Questions & 10 Tasks
+
+##  10 Conceptual Questions
+1. **Bounded Contexts vs Technical Modules:** How do you split a Laravel app into bounded contexts (e.g., `Catalog`, `Billing`, `Fulfillment`) without creating a "distributed monolith"? What should cross-context communication look like?
+2. **Ubiquitous Language in Code:** How do you ensure class names, methods, and variables match the actual business language instead of technical jargon? What happens when code and business vocabulary drift apart?
+3. **Entities vs Value Objects:** When should a model be an Entity (identity matters, mutable) vs a Value Object (immutability, equality by attributes)? How do you implement VOs safely in Laravel without fighting Eloquent?
+4. **Repositories vs Eloquent Directly:** Why do some teams wrap Eloquent in Repository interfaces? When does it add architectural clarity vs unnecessary abstraction? How do you avoid "fake repositories" that just proxy `Model::query()`?
+5. **Domain Events vs Framework Events:** What's the difference between a domain event (a business fact: `OrderPlaced`) and a Laravel event (technical notification: `UserRegistered`)? How do you keep domain logic decoupled from HTTP/mail/queue infrastructure?
+6. **Application Services vs Domain Services:** Where should use-case logic live? How do you avoid "anemic domain models" (models with only data) vs "god services" (one class doing everything)?
+7. **Command/Query Separation:** How do CQRS principles apply to Laravel's request lifecycle? When should reads and writes be physically separated, and when is it premature optimization?
+8. **Dependency Injection & Container Resolution:** How does Laravel's service container actually resolve dependencies? When should you use constructor injection vs facades vs `app()`? What are the testing implications of each?
+9. **Testing the Domain Layer:** How do you unit test business rules without hitting the database, HTTP layer, or Laravel facades? What does a "pure" domain test look like in a Laravel project?
+10. **Incremental DDD Refactoring:** What are the safe, non-breaking steps to evolve a traditional MVC Laravel app into a domain-centric architecture? How do you refactor without stopping feature delivery?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Value Object Extraction**<br>Convert `Product::price` from float to a `Money` VO (`amount` in cents + `currency`). Implement `add()`, `equals()`, `format()`. Update Eloquent cast. Ensure math never uses floats. | `new Money(1999, 'USD')->add(new Money(500, 'USD'))` works. Blade shows `$24.99`. DB stores integer. Zero float arithmetic in domain. |
+| 2 | **Bounded Context Split**<br>Extract `Billing` context (invoices, payments, subscriptions) into its own namespace. Share data with `Catalog` ONLY via domain events or read-only DTOs. No cross-context model relationships. | `Billing\Invoice` never imports `Catalog\Product`. Communication happens via `OrderPaid` event. Tests verify isolation. `composer dump-autoload` shows clear boundaries. |
+| 3 | **Repository Pattern Implementation**<br>Create `ProductRepositoryInterface` + `EloquentProductRepository`. Inject into `ProductService`. Add method `findAvailableForPurchase()`. Mock in test. | Service depends on interface, not Eloquent. Test passes with mock. Real implementation uses `where('stock', '>', 0)`. No `Product::` calls in service. |
+| 4 | **Domain Event Decoupling**<br>Fire `OrderPlaced` as a plain PHP class (not `Illuminate\Events`). Create `ReserveInventoryListener` that handles it. Keep listener out of domain layer. Wire via service provider. | Event class contains only business data. Listener calls infrastructure (queue, DB). Domain layer has zero Laravel dependencies. Test verifies event payload. |
+| 5 | **Command/Query Handler**<br>Create `PlaceOrderCommand` + `PlaceOrderHandler`. Separate read model (`ProductListView` DTO) from write model (`Order`). Handler orchestrates validation, persistence, event firing. | Controller instantiates command, passes to handler, returns response. Handler contains use-case logic. Read queries bypass command layer. Flow is linear & testable. |
+| 6 | **Container Binding & DI**<br>Replace `app()->make()`, `resolve()`, and facades in `CartService` with constructor injection. Register bindings in `AppServiceProvider`. Verify `php artisan tinker` resolves correctly. | `__construct(CartRepository $repo, TaxCalculator $tax)` works. No static calls. Tests can swap implementations. Container resolves without errors. |
+| 7 | **Pure Domain Unit Test**<br>Write a PHPUnit test for `Order::calculateTotal()` or `Money::compareTo()` that uses ZERO Laravel features, no DB, no HTTP, no facades. Run it in isolation. | Test passes in <10ms. No `RefreshDatabase`. No `Illuminate\` imports in test. Asserts verify business rules only. Can run without Laravel bootstrapped. |
+| 8 | **Refactor Fat Controller**<br>Extract `CheckoutController` logic into `CheckoutService` + `ValidateCartAction` + `ProcessPaymentAction`. Controller only handles HTTP layer. Controller method < 8 lines. | Controller routes request, calls service, returns response. Actions are single-responsibility, testable. No business logic in controller. Tests mock service. |
+| 9 | **Policy as Domain Rule**<br>Move business rule "user can cancel order only within 24h of placement" from controller to `Order::canBeCancelled()` or `OrderPolicy`. Test edge cases (leap years, timezones). | Rule lives in domain/model. Controller/policy calls `->canBeCancelled()`. Test covers boundary conditions. No hardcoded hours scattered in views/controllers. |
+| 10| **Architectural Linting Setup**<br>Install `larastan`/`phpstan` with strict rules. Enforce return types, remove `mixed`, ban `dd()/dump()` in production, require PHPDoc for complex methods. Fix all errors. Commit `phpstan.neon`. | `vendor/bin/phpstan analyse` passes level 8+. No `mixed` returns. Zero `dd()` in src. CI blocks non-compliant PRs. Rules documented in README. |
