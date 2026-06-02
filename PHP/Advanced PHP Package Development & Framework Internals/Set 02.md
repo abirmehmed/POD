@@ -1,0 +1,31 @@
+# Advanced PHP Package Development & Framework Internals: Set 2
+## Building Production-Ready PHP Packages
+
+## 📘 10 Conceptual Questions
+1. **Composer Autoloading Mechanics:** How does Composer’s `psr-4` autoloading actually work under the hood? Compare it to `classmap`, `files`, and `exclude-from-classmap`. Why is `classmap-authoritative` a massive performance boost in production?
+2. **Semantic Versioning (SemVer) in PHP:** What exactly constitutes a MAJOR, MINOR, and PATCH release according to SemVer? Why is changing a method signature or removing a public property always a MAJOR breaking change, and how does Composer’s `^` (caret) operator interpret these versions?
+3. **Orchestra Testbench:** What is Orchestra Testbench, and why is it the absolute gold standard for testing Laravel packages? How does it differ from bootstrapping a full, traditional Laravel application for your package tests?
+4. **Package Auto-Discovery:** How does Laravel automatically register a package’s Service Providers and Facades without the user manually adding them to `config/app.php`? Explain the role of the `extra.laravel` block in `composer.json`.
+5. **Dependency Constraint Strategy:** Why should a package use loose constraints for framework dependencies (e.g., `"illuminate/support": "^10.0|^11.0"`) but strict constraints for development tools (e.g., `"phpstan/phpstan": "^1.10"`)? What is "dependency hell"?
+6. **Cross-Version Testing Matrix:** How do you ensure your package doesn’t break on PHP 8.3 or Laravel 11 if you develop it on PHP 8.2 and Laravel 10? Explain how GitHub Actions matrix strategies solve this.
+7. **Publishing Assets & Configurations:** How does the `php artisan vendor:publish` command work? Why should package config files use the `mergeConfigFrom` method in the Service Provider, and how do you prevent user customizations from being overwritten on package updates?
+8. **Deprecation Strategies:** How do you safely remove a feature in a future major version? Explain the use of `trigger_error('...', E_USER_DEPRECATED)` and how modern IDEs and static analysis tools react to it.
+9. **Packagist & Release Workflow:** What happens behind the scenes when you run `git tag v1.2.0` and push it? How does Packagist detect the new version, and why is a well-maintained `CHANGELOG.md` critical for package adoption?
+10. **Local Package Development:** How do you test a package you are building against a real application (like MultiMart) before publishing it to Packagist? Explain Composer’s `path` repository type and symlinking.
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Initialize a Package Skeleton**<br>Create a new directory for a package (e.g., `multimart/helpers`). Initialize `composer.json` with correct `name`, `description`, `license`, and `autoload.psr-4` mapping. | Running `composer dump-autoload` generates the autoloader. The namespace maps perfectly to the `src/` directory. |
+| 2 | **Orchestra Testbench Setup**<br>Install `orchestra/testbench` in `require-dev`. Create a `TestCase.php` that extends `Orchestra\Testbench\TestCase`. Write a basic test asserting that your package’s main class can be instantiated. | `vendor/bin/phpunit` runs successfully. The test bootstraps a lightweight Laravel environment specific to the package. |
+| 3 | **Auto-Discovery Configuration**<br>Add the `extra.laravel` block to your `composer.json` to auto-register a Service Provider and a Facade. Require this local package in your MultiMart app and verify it loads without manual registration. | The Service Provider’s `boot` method executes automatically in MultiMart. The Facade is resolvable globally. |
+| 4 | **GitHub Actions Matrix Testing**<br>Create `.github/workflows/run-tests.yml`. Configure a matrix strategy to test the package against PHP `8.1`, `8.2`, `8.3` and Laravel `10.*`, `11.*`. | The workflow runs 6 separate jobs. All jobs pass. You can confidently claim the package supports these versions. |
+| 5 | **Config Publishing & Merging**<br>Create a `config/multimart.php` file. In your Service Provider’s `register` method, use `$this->mergeConfigFrom()`. In the `boot` method, use `$this->publishes()` to allow users to publish it. | Running `php artisan vendor:publish --tag=multimart-config` copies the file to the host app’s `config/` directory. Default values are safely merged if not published. |
+| 6 | **Deprecation Warning Implementation**<br>Add a method to your package that you plan to remove in v2.0. Add `@deprecated` to the PHPDoc and use `trigger_error('Use newMethod instead', E_USER_DEPRECATED)` inside the method. Write a PHPUnit test that expects this deprecation. | IDEs show a strikethrough warning when the method is used. The PHPUnit test passes by explicitly expecting the deprecation notice. |
+| 7 | **Loose vs. Strict Dependencies Audit**<br>Review your `composer.json`. Ensure `illuminate/contracts` or `illuminate/support` uses `^10.0|^11.0`. Ensure dev tools like `phpunit/phpunit` and `phpstan/phpstan` are locked to specific major/minor versions to prevent CI breakage. | Dependencies are optimally constrained. `composer update` will not accidentally pull in a breaking framework version or a breaking tool version. |
+ | **Local Path Linking**<br>In your MultiMart app’s `composer.json`, add a `repositories` block with `"type": "path"` pointing to your local package directory. Run `composer require your-vendor/package-name`. | Composer creates a symlink in `vendor/` to your local package directory. Changes you make in the package instantly reflect in MultiMart without re-publishing. |
+| 9 | **Changelog & Release Tagging**<br>Create a `CHANGELOG.md` following the "Keep a Changelog" format. Make a minor feature addition, commit it, update the changelog, and run `git tag v1.1.0` followed by `git push origin v1.1.0`. | The repository has a clean, annotated tag. The changelog clearly documents what changed for the end-user. |
+| 10| **Comprehensive README.md**<br>Write a professional `README.md` for your package. Include: Badges (build status, PHP version), Installation, Configuration, Usage Examples, Testing instructions, and a link to the Changelog. | The README is clear enough that a stranger could install, configure, and use your package in 5 minutes without asking you questions. |
