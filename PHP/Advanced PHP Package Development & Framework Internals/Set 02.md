@@ -2,6 +2,39 @@
 ## Building Production-Ready PHP Packages
 
 ## 📘 10 Conceptual Questions
+1. **Composer Autoload Mechanics:** What is the exact difference between `autoload` and `autoload-dev` in `composer.json`? Why is it a critical security and performance anti-pattern to include development tools (like PHPUnit or Pest) in the production `autoload` block?
+2. **Semantic Versioning (SemVer) in PHP:** How do MAJOR, MINOR, and PATCH versions dictate backward compatibility (BC)? Why should package authors strictly use the caret (`^`) operator for dependencies, and what are the risks of using the tilde (`~`) or wildcard (`*`) operators?
+3. **Framework Agnosticism:** What does it mean for a package to be "framework agnostic"? How do you structure a package (e.g., a `src/` core directory and a `laravel/` wrapper directory) so the core logic can be used in Symfony, Laravel, or a standalone CLI script?
+4. **Deferred Service Providers:** Why is it dangerous for a package's Service Provider to resolve heavy services (like database connections or HTTP clients) in the `register` or `boot` methods? How does implementing the `DeferrableProvider` interface and the `provides()` method solve this?
+ a Package's Configuration:** Why should a package never assume its config file exists? Explain the pattern of merging package defaults with published user configs using `config()->merge()` or the null coalescing operator.
+6. **Auto-Discovery (`extra.laravel`):** How does Laravel automatically find and load a package's Service Providers and Facade aliases without the user manually adding them to `config/app.php`? What goes into the `composer.json` `extra` block to enable this?
+7. **Dependency Injection & Extensibility:** Why should a package type-hint interfaces rather than concrete classes in its public API? How does this allow the consuming application to easily swap out the package's default implementation (e.g., swapping a default Cache driver for a Redis driver) via their own `AppServiceProvider`?
+8. **Orchestra Testbench:** Why can't you just use a standard Laravel application's `phpunit.xml` to test a package? How does `orchestra/testbench` bootstrap a lightweight, isolated Laravel environment specifically for package testing?
+9. **Local Package Development Workflow:** How do you test a package you are building against a real Laravel application (like MultiMart) *before* publishing it to Packagist? Explain the `composer.json` `repositories` path or symlink strategy.
+10. **Package Documentation & Changelogs:** What are the non-negotiable sections of a production-ready package `README.md`? Why is maintaining a strict `CHANGELOG.md` (following "Keep a Changelog" standards) critical for consumer trust and safe upgrades?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Initialize a Strict Package**<br>Run `composer init` in a new directory. Configure PSR-4 autoloading for `YourName\MultiMartUtils\`. Add `phpstan` and `phpunit` to `require-dev` only. Create a `.gitignore` excluding `vendor/` and `.phpunit.result.cache`. | `composer install` works perfectly. `vendor/bin/phpstan` and `vendor/bin/phpunit` are available, but the `autoload` block remains clean for production. |
+| 2 | **Framework-Agnostic Core**<br>Create a `src/Calculator.php` class with zero Laravel dependencies (no `Illuminate` imports). Then, create a `laravel/CalculatorServiceProvider.php` that registers it. | The core class can be instantiated in a plain PHP script. The Laravel provider cleanly bridges it to the framework. |
+| 3 | **Implement Auto-Discovery**<br>Add the `extra.laravel` block to your package's `composer.json` to register your Service Provider and a custom Facade. Require this local package in your MultiMart app and verify it loads automatically. | You do *not* need to manually register the provider in MultiMart's `config/app.php`. The facade resolves correctly. |
+| 4 | **Safe Configuration Publishing**<br>Create a `config/multimart-utils.php` file in the package. In the Service Provider's `boot` method, use `$this->publishes()` to allow users to publish it. In your code, read values using `config('multimart-utils.key', 'default_fallback')`. | Running `php artisan vendor:publish --tag=multimart-utils-config` works. If the user deletes the published file, the package gracefully falls back to defaults without crashing. |
+| 5 | **Orchestra Testbench Setup**<br>Install `orchestra/testbench`. Create a `TestCase.php` that extends `Orchestra\Testbench\TestCase`. Write a feature test that hits a route or resolves a service provided by your package. | `vendor/bin/phpunit` runs successfully in the isolated package directory, proving the package works within a mocked Laravel environment. |
+| 6 | **GitHub Actions Matrix Testing**<br>Create a `.github/workflows/tests.yml` file. Configure a matrix strategy to test the package across PHP 8.1, 8.2, and 8.3, and Laravel 10.x and 11.x. | The CI pipeline automatically spins up 6 different environments and runs the test suite in all of them, catching version-specific incompatibilities. |
+| 7 | **Local Path Repository Testing**<br>In your MultiMart app's `composer.json`, add a `repositories` block pointing to the local path of your new package (`"type": "path", "url": "../my-package"`). Require it using `@dev`. | MultiMart instantly uses your local package code. Changes made in the package directory are immediately reflected in MultiMart without `composer update`. |
+| 8 | **Custom Artisan Command in Package**<br>Create an Artisan command inside the package (e.g., `multimart:utils:clear-cache`). Register it in the Service Provider's `boot` method using `$this->commands([...])`. | Running `php artisan list` in the host app shows the new command. Executing it performs the expected package logic. |
+| 9 | **Semantic Versioning & Changelog**<br>Create a `CHANGELOG.md` following the "Keep a Changelog" format (Added, Changed, Deprecated, Removed, Fixed, Security). Tag the repository as `v1.0.0`. | The changelog clearly explains what the initial release contains. Git tags are properly formatted for Composer to recognize. |
+| 10| **Publish to Packagist (or Simulate)**<br>Push the package to a public GitHub repository. Submit it to Packagist.org (or simulate the process by documenting the exact steps, including setting up a GitHub webhook for auto-updates). | The package is discoverable via `composer search`. You understand the exact workflow from Git tag to public availability. |
+
+
+# Advanced PHP Package Development & Framework Internals: Set 2
+## Building Production-Ready PHP Packages
+
+## 📘 10 Conceptual Questions
 1. **Composer Autoloading Mechanics:** How does Composer’s `psr-4` autoloading actually work under the hood? Compare it to `classmap`, `files`, and `exclude-from-classmap`. Why is `classmap-authoritative` a massive performance boost in production?
 2. **Semantic Versioning (SemVer) in PHP:** What exactly constitutes a MAJOR, MINOR, and PATCH release according to SemVer? Why is changing a method signature or removing a public property always a MAJOR breaking change, and how does Composer’s `^` (caret) operator interpret these versions?
 3. **Orchestra Testbench:** What is Orchestra Testbench, and why is it the absolute gold standard for testing Laravel packages? How does it differ from bootstrapping a full, traditional Laravel application for your package tests?
