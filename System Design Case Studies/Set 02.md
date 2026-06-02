@@ -1,0 +1,31 @@
+# System Design Case Studies: Set 2
+## Real-Time Messaging: Chat Application (WhatsApp / Discord / Slack)
+
+## 📘 10 Conceptual Questions
+1. **Protocol Selection (WebSockets vs. SSE vs. Long Polling):** Why are WebSockets the standard for bidirectional chat applications? When might Server-Sent Events (SSE) be a better choice, and why is Long Polling considered a legacy fallback?
+2. **Message Ordering & Delivery Guarantees:** How do you guarantee that messages appear in the exact order they were sent, even if they arrive out of order over the network? Explain the role of monotonically increasing sequence IDs vs. timestamps.
+3. **Database Choice for Billions of Messages:** Why do massive chat apps often choose wide-column NoSQL databases (like Cassandra or DynamoDB) over traditional relational databases for message storage? How does the partition key design impact read/write performance?
+4. **Scaling WebSocket Connections:** A single server can only hold so many open TCP connections. How do you scale WebSocket servers horizontally? Explain the role of sticky sessions (or lack thereof) and why a Pub/Sub mechanism (like Redis) is mandatory for multi-server routing.
+5. **Fan-Out on Write vs. Fan-Out on Read:** For a group chat with 10,000 members, should the system write the message to 10,000 individual inboxes immediately (fan-out on write), or store it once and have each user fetch it when they open the chat (fan-out on read)? What are the trade-offs?
+6. **Presence System (Online/Offline Status):** How do you efficiently track and broadcast the online status of millions of users? Explain the heartbeat mechanism, Redis sorted sets, and why you shouldn't update a relational database on every connect/disconnect.
+7. **Ephemeral Events (Typing Indicators & Read Receipts):** How do you handle high-frequency, low-value events like "User is typing..." without overwhelming your message queues or database? Explain TTL-based caching and UDP-like fire-and-forget semantics.
+8. **Offline Message Sync & Cursors:** When a mobile user loses connection and reconnects, how do they efficiently fetch only the messages they missed? Explain cursor-based pagination using `last_seen_message_id` instead of time-based offsets.
+9. **Media & File Sharing Architecture:** Why should you never send image/video binary data through a WebSocket? Explain the presigned URL pattern: client requests upload URL → uploads directly to S3 → sends message with the S3 URL.
+10. **End-to-End Encryption (E2EE) Trade-offs:** At a high level, how does E2EE (like the Signal Protocol) work? What server-side features (e.g., full-text search, server-side message retention, spam detection) do you permanently lose when implementing true E2EE?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **WebSocket Server Setup**<br>Set up a real-time server (Laravel Reverb, Soketi, or Node.js). Handle `connect`, `disconnect`, and a basic `chat_message` event. Log active connection counts. | Client can connect, send a message, and receive it instantly. Server logs connection lifecycle events cleanly. |
+| 2 | **Message Schema & Partitioning**<br>Design a database schema optimized for chat. Use a composite primary key (e.g., `(chat_id, message_id)` or `(chat_id, timestamp)`). Write the query to fetch the last 50 messages for a specific chat. | Query uses the primary key for an index scan. No full table scans. Fetching historical messages is O(1) relative to the total chat size. |
+| 3 | **Multi-Server Pub/Sub Routing**<br>Simulate two separate WebSocket server instances. Use Redis Pub/Sub to ensure that a message sent by a user connected to Server A is correctly routed and delivered to a user connected to Server B. | Message successfully crosses server boundaries. No messages are lost or duplicated during routing. |
+| 4 | **Sequence ID Implementation**<br>Implement a mechanism to generate a strictly increasing `sequence_id` per `chat_id` (e.g., using a Redis `INCR` or a database sequence). Ensure the client uses this, not the timestamp, to order messages. | Messages are rendered in perfect chronological order on the client, even if network latency causes them to arrive out of order. |
+| 5 | **Redis-Based Presence System**<br>Build an online/offline tracker. On WebSocket connect, add user to a Redis Set and set a heartbeat key with a 30-second TTL. On disconnect, remove them. Query the set to get online friends. | Presence updates are instant. Users who crash (no disconnect event) are automatically marked offline after 30 seconds. |
+| 6 | **Fan-Out on Write (Group Chat)**<br>Create a background job that triggers when a message is sent to a group chat. The job writes the message reference to the individual "inbox" partition of every group member. | Message is available in all members' inboxes immediately. Write latency is absorbed by the background queue, keeping the sender's experience fast. |
+| 7 | **Offline Sync API (Cursor Pagination)**<br>Build a REST endpoint: `GET /api/chats/{id}/messages?cursor={last_message_id}`. Ensure it returns the next 50 messages *newer* than the cursor, ordered ascending. | API correctly fetches missed messages. No `OFFSET` is used. Performance remains constant whether the cursor is at message 10 or 10,000,000. |
+| 8 | **Ephemeral Typing Indicators**<br>Implement a "user is typing" event. Broadcast it via WebSocket, but enforce a strict 3-second Redis TTL on the typing state. If the user stops typing, the state auto-expires. | Typing indicator appears instantly and disappears reliably without requiring explicit "stopped typing" events (which are often lost). |
+| 9 | **Presigned URL Media Flow**<br>Implement the media upload flow: Client requests a presigned S3 upload URL from your backend → Client uploads file directly to S3 → Client sends chat message containing the S3 URL. | Backend never handles the binary file stream. Upload is fast and scalable. Message renders the image correctly. |
+| 10| **WebSocket Load Testing**<br>Write a script (using Node.js `ws` library or a Laravel testing tool) to simulate 500–1,000 concurrent WebSocket connections sending messages. Monitor server memory and CPU. | Server handles the concurrent load without crashing or memory leaks. Message delivery latency remains under 100ms. |
