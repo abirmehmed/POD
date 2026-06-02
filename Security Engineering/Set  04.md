@@ -1,0 +1,31 @@
+# Security Engineering: Set 4 
+## Cryptography, Compliance, Audit & Incident Response
+
+## 📘 10 Conceptual Questions
+1. **Encryption at Rest vs. In Transit:** What is the difference between symmetric (e.g., AES-256) and asymmetric (e.g., RSA) encryption? Why is TLS (in transit) insufficient on its own, and when must you encrypt sensitive data (like PII or payment details) at the database level?
+2. **Hashing vs. Encryption:** Why is it a critical security flaw to "encrypt" passwords? Explain the mathematical difference between one-way hashing (with salt/pepper) and two-way encryption, and when each is appropriate.
+3. **Key Management & Rotation:** Why is hardcoding encryption keys or API secrets in `.env` files considered a vulnerability at scale? Explain the role of a Key Management Service (KMS) or HashiCorp Vault, and how automated key rotation prevents long-term data exposure.
+4. **GDPR & CCPA Core Mandates:** From a technical perspective, what do "Right to Access" (Data Portability) and "Right to be Forgotten" (Erasure) actually require? How do you handle cascading deletes without breaking referential integrity or audit trails?
+5. **Anonymization vs. Pseudonymization:** What is the difference? Why does GDPR treat pseudonymized data (reversible with a key) as personal data, while truly anonymized data (irreversible) falls outside its scope?
+6. **Audit Logging & Non-Repudiation:** What makes an audit log legally and technically valid? Explain the requirements for immutability, timestamp accuracy, actor identification, and why logging PII or passwords in plain text is a catastrophic compliance failure.
+7. **Incident Response Lifecycle:** What are the standard phases of incident response (Preparation, Identification, Containment, Eradication, Recovery, Lessons Learned)? Why is "Containment" often prioritized over immediate "Eradication" during an active breach?
+8. **Penetration Testing vs. Vulnerability Scanning:** How do automated scanners (like Nessus or Dependabot) differ from manual penetration testing? Why is a pen test a "point-in-time" assessment, and how do you define the "Rules of Engagement" to prevent accidental downtime?
+9. **Zero-Downtime Secret Rotation:** How do you rotate a database password or third-party API key without causing application downtime? Explain the "dual-read / dual-write" or "grace period" strategy.
+10. **Software Supply Chain Security:** How can a compromised third-party package (e.g., a malicious npm or Composer update) breach your system? Explain the importance of lockfiles, SBOMs (Software Bill of Materials), and CI/CD pipeline integrity.
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Encryption at Rest Implementation**<br>Identify a sensitive column (e.g., `national_id`, `api_token`). Use Laravel's `Crypt` facade (or database-level encryption) to encrypt the data before saving, and decrypt it on retrieval. Verify the raw DB value is unreadable. | Database stores a ciphertext string. Application seamlessly reads/writes the plaintext. Key is managed via `APP_KEY` or a dedicated KMS. |
+| 2 | **"Right to be Forgotten" Command**<br>Write a `php artisan user:forget {id}` command. It must anonymize PII (name, email, IP), preserve financial/audit records (for legal hold), and delete soft-deleted records permanently. | Command executes successfully. User is unidentifiable in the DB. Related orders/logs remain intact but dissociated from PII. |
+| 3 | **GDPR Data Export (Portability)**<br>Create a `php artisan user:export {id}` command that aggregates all user data (profile, orders, logs) into a structured JSON or CSV file, zips it, and generates a secure, time-limited download link. | Export contains all relevant user data in a machine-readable format. Download link expires after 24 hours. |
+| 4 | **PII Redaction in Logs**<br>Write a custom Monolog processor in Laravel that intercepts log messages and masks sensitive patterns (e.g., replaces `user@example.com` with `u***@example.com`, or masks credit card numbers). | Log files contain `[REDACTED]` or masked values instead of raw PII. Normal debugging info remains intact. |
+| 5 | **Immutable Audit Trail**<br>Create an `audit_logs` table. Use a database trigger or a dedicated service to append logs for critical actions (e.g., "User X changed role to Admin"). Ensure logs cannot be updated or deleted via the ORM. | Logs are append-only. Attempting to `$auditLog->delete()` or `update()` fails or is blocked. |
+| 6 | **Graceful Secret Rotation**<br>Simulate an API key rotation. Modify your service class to check for a "primary" and "secondary" key. If the primary fails (e.g., 401 Unauthorized), automatically fall back to the secondary key and log a rotation alert. | Application continues functioning during the key transition window. No downtime or failed user requests. |
+| 7 | **CI/CD Security Gate**<br>Add a step to your GitHub Actions/GitLab CI pipeline that runs `composer audit` and `npm audit`. Configure it to fail the build if any "High" or "Critical" vulnerabilities are detected. | Pipeline automatically rejects PRs with vulnerable dependencies. Developers are forced to update or provide a documented exception. |
+| 8 | **Basic Local Penetration Test**<br>Run a free automated scanner (like OWASP ZAP or `nikto`) against your local development environment. Identify at least one finding (e.g., missing header, verbose error) and remediate it in code. | Scanner report shows improvement after your fix. You understand how automated tools probe for weaknesses. |
+| 9 | **Incident Response Runbook**<br>Draft an `INCIDENT_RESPONSE.md` file. Include contact trees, immediate containment steps (e.g., "Revoke compromised API keys", "Isolate DB"), and a post-mortem template. | Document is clear, actionable, and accessible to the engineering team. Covers at least 3 scenarios (e.g., Data Breach, DDoS, Compromised Admin Account). |
+| 10| **Security Scorecard Final Audit**<br>Run your application through Mozilla Observatory and a CSP evaluator. Fix any remaining issues to achieve a consistent "A+" grade across all security headers, CSP, and cookie configurations. | Final report shows A+ grade. All headers are optimally configured without breaking application functionality. |
