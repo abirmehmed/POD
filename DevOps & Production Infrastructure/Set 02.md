@@ -1,0 +1,31 @@
+# DevOps & Production Infrastructure: Set 2
+## Docker Deep Dive, Container Orchestration & Production-Ready Images
+
+## 📘 10 Conceptual Questions
+1. **Namespaces & Cgroups:** How does Docker actually isolate containers from the host and each other? Explain the difference between Linux namespaces (PID, network, mount) and cgroups (resource limits), and why this makes containers lighter than VMs.
+2. **Layer Caching & Build Optimization:** How does Docker's layer caching mechanism work? Why does the order of instructions in a `Dockerfile` (e.g., `COPY composer.json` before `COPY .`) drastically impact build times, and how do you exploit this for fast CI/CD pipelines?
+3. **Multi-Stage Builds:** Why should you never ship a `node_modules` folder or a `composer` cache to production? How do multi-stage builds reduce image size, shrink the attack surface, and improve runtime performance?
+4. **The Non-Root Principle:** Why is running a container as `root` (UID 0) a critical security risk, even inside a container? How do you configure a `Dockerfile` and PHP-FPM to run as a dedicated, unprivileged user without breaking file permissions?
+5. **Volumes: Bind Mounts vs. Named Volumes:** What is the technical difference between mounting a host directory (`./src:/var/www`) and a named volume (`app_data:/var/www/storage`)? When does each fail (e.g., file syncing issues on Mac/Windows, permission errors in production)?
+6. **Docker Health Checks:** Why is a container "running" not the same as an app "healthy"? How does the `HEALTHCHECK` instruction in a `Dockerfile` work, and how do orchestrators (Docker Compose, Kubernetes) use it to route traffic or restart failing containers?
+7. **Container Networking:** How do containers on the same Docker network discover and communicate with each other (e.g., PHP talking to MySQL via hostname `db`)? Explain the difference between `bridge`, `host`, and `overlay` networks.
+8. **Image Base Selection & Security:** When should you use `alpine`, `slim`, or `distroless` base images? What are the trade-offs in terms of image size, debugging capability (no shell/tools), and glibc compatibility for PHP extensions?
+9. **Docker Compose vs. Production Orchestration:** Why is `docker-compose.yml` explicitly not recommended for production deployments? What critical features (self-healing, rolling updates, service discovery, scaling) do Kubernetes or Swarm provide that Compose lacks?
+10. **The `.dockerignore` File:** How does the build context affect build speed and security? Why is sending `.env`, `.git`, or `vendor/` to the Docker daemon a bad practice, and how do you enforce exclusions?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Production Multi-Stage Dockerfile**<br>Write a `Dockerfile` for a Laravel app. Stage 1: Install Composer/Node deps. Stage 2: Copy only compiled assets and `vendor/` into a minimal PHP-FPM base. Verify final image size is < 150MB. | `docker build` completes in < 2 mins on cache miss. Final image excludes `node_modules`, `tests/`, and build tools. `docker run` serves the app correctly. |
+| 2 | **Enforce Non-Root Execution**<br>Create a `www-data` user in your `Dockerfile`. Set `USER www-data`. Ensure Laravel storage/logs directories are writable by this user via `RUN chown`. Verify `id` inside container is not root. | Container process runs as UID 1000/www-data. App can write to `storage/`. Attempting to write to `/etc` fails. |
+| 3 | **Implement Docker Health Checks**<br>Add a `HEALTHCHECK` instruction to your PHP-FPM image that runs `curl -f http://localhost:9000/health || exit 1`. Configure Compose to wait for DB health before starting the app. | `docker ps` shows `(healthy)` after 30s. Compose `depends_on` condition prevents app startup until DB is ready. |
+| 4 | **Optimize Layer Caching**<br>Reorganize your `Dockerfile` to maximize cache hits. Copy `composer.json`/`package.json` first, run installs, then copy the rest of the app code. Run build twice and compare timings. | Second build takes < 5 seconds because dependencies are cached. Code changes do not invalidate the dependency installation layer. |
+| 5 | **Secure Build Context**<br>Create a strict `.dockerignore` file. Exclude `.env`, `.git`, `docker-compose.yml`, `node_modules`, and IDE configs. Verify these files are not present in the final image layers. | `docker build` context size is small. Inspecting image layers shows no sensitive files or heavy ignored directories. |
+| 6 | **Bind Mounts for Local Dev**<br>Create a `docker-compose.dev.yml` that uses bind mounts (`./app:/var/www/html`) for live-reloading PHP/Blade changes without rebuilding the image. Configure volume options for performance. | Editing a file on host reflects instantly in container. `artisan` commands run inside container see host changes. |
+| 7 | **Named Volumes for Data Persistence**<br>Configure MySQL/Postgres in Compose to use a named volume (`db_data:/var/lib/mysql`). Stop and delete the container (`docker-compose down`). Verify data persists after `docker-compose up`. | Data remains intact after container destruction. Volume is managed by Docker, not tied to a fragile host path. |
+| 8 | **Resource Limits Configuration**<br>Add `deploy.resources` (or `mem_limit`/`cpus`) to your Compose services. Limit PHP-FPM to 512MB RAM and 1 CPU. Simulate a memory leak (e.g., infinite loop) and verify Docker kills/restarts it. | Container is OOM-killed when exceeding 512MB. Compose restarts it automatically. Host system remains unaffected. |
+| 9 | **Custom Nginx Configuration**<br>Write a custom `nginx.conf` and `default.conf` optimized for Laravel (handling `.php` routing, security headers, gzip). Copy these into the image via `Dockerfile` instead of bind mounting in prod. | Nginx serves Laravel routes correctly. Security headers (X-Frame-Options) are present in response. Config is baked into the image. |
+| 10| **Push to Container Registry**<br>Tag your built image and push it to GitHub Container Registry (GHCR) or Docker Hub. Pull it on a different machine/directory and run it using only the image name. | Image is publicly/private accessible via registry. `docker run registry/image:tag` works seamlessly without local build context. |
