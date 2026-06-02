@@ -1,0 +1,31 @@
+# Modern Frontend Architecture: Set 3
+## Testing, Accessibility (a11y) & Developer Experience (DX)
+
+## 📘 10 Conceptual Questions
+1. **The Frontend Testing Pyramid:** How do Unit Tests (Vitest/Jest), Component Tests (Testing Library), and End-to-End (E2E) Tests (Playwright/Cypress) differ in scope, speed, and confidence? Why is the "Testing Trophy" (heavy on integration/component tests, light on unit/E2E) often preferred for modern UI?
+2. **Mocking vs. Network Interception:** Why is mocking `fetch` or `axios` directly considered brittle? How do tools like Mock Service Worker (MSW) intercept requests at the network level to provide more realistic and maintainable tests?
+3. **Semantic HTML & ARIA:** Why is a `<div onClick="...">` an accessibility anti-pattern? Explain how native HTML elements (`<button>`, `<nav>`, `<main>`) provide built-in keyboard navigation and screen reader support, and when ARIA attributes should actually be used (and when they shouldn't).
+4. **Focus Management:** Why is managing focus critical in Single Page Applications (SPAs)? Explain how to trap focus inside a modal dialog and how to restore focus to the triggering element when the modal closes.
+5. **Snapshot Testing: Pros & Cons:** What is snapshot testing, and why does it catch unintended UI regressions? Conversely, why do many teams consider it an anti-pattern that leads to "blindly updating" snapshots without understanding the breakage?
+6. **Color Contrast & Visual Accessibility:** What are the WCAG AA and AAA standards for color contrast? How do you ensure text is readable for users with visual impairments, and what tools can automate this check during development?
+7. **Internationalization (i18n) Architecture:** How do you structure translation files to support multiple languages? Explain the challenges of pluralization, date/number formatting, and right-to-left (RTL) layout support.
+8. **Developer Experience (DX) as a Productivity Multiplier:** How do Hot Module Replacement (HMR), fast test runners, and strict but automated linting directly impact code quality and developer happiness? Why is a slow feedback loop the enemy of good architecture?
+9. **Flaky E2E Tests:** What causes E2E tests to pass locally but fail randomly in CI? Explain race conditions, network latency, and how to use proper waiting strategies (e.g., `waitFor`, `getByRole`) instead of hardcoded `sleep()` delays.
+10. **CI/CD for Frontend Quality Gates:** How do you configure a CI pipeline to run type checking, linting, and testing in parallel to keep the feedback loop under 2 minutes? Why should these checks block merges via branch protection rules?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Component Unit Test**<br>Write a test for a pure UI component (e.g., `ProductCard`) using Vitest/Jest and Testing Library. Assert that it renders the correct title/price from props and emits/calls the correct function when the "Add to Cart" button is clicked. | Test runs in <100ms. No DOM mocking libraries (like Enzyme); uses `@testing-library/dom` queries (`getByRole`, `getByText`). |
+| 2 | **E2E Critical User Flow**<br>Set up Playwright or Cypress. Write an E2E test that simulates a user: visiting the homepage, searching for a product, adding it to the cart, and seeing the cart count update. | Test runs headlessly in CI. Uses robust selectors (`getByRole('button', { name: /add to cart/i })`). Passes consistently without hardcoded waits. |
+| 3 | **API Mocking with MSW**<br>Replace a manual `fetch` mock in a component test with Mock Service Worker (MSW). Define a mock handler that returns a specific product JSON payload. Verify the component renders the mocked data. | Test intercepts the actual network request. Component behaves exactly as it would in production. MSW setup is reusable across tests. |
+| 4 | **Accessible Custom Component Refactor**<br>Take a custom-built dropdown or button made of `<div>`s. Refactor it to use proper semantic HTML, `aria-expanded`, `aria-haspopup`, and ensure it is fully navigable using only the `Tab`, `Enter`, and `Escape` keys. | Screen reader announces the component correctly. Keyboard users can open, navigate, and close it without a mouse. |
+| 5 | **Focus Trap Implementation**<br>Build a Modal component. When it opens, trap the keyboard focus inside the modal. When it closes (via ESC or clicking outside), return focus to the exact button that opened it. | Tabbing cycles only through modal elements. Closing the modal restores focus to the trigger, preventing the user from losing their place on the page. |
+ | 6 | **Automated a11y Testing**<br>Integrate `jest-axe` or Playwright's `@axe-core/playwright` into your test suite. Write a test that intentionally violates an a11y rule (e.g., missing `alt` text), watch it fail, then fix it. | CI automatically catches accessibility violations. You have a baseline of 0 a11y errors for critical components. |
+| 7 | **i18n Integration**<br>Install an i18n library (e.g., `vue-i18n` or `react-i18next`). Extract all hardcoded strings from a multi-step form into JSON translation files. Implement a language switcher that persists the user's choice. | UI updates instantly on language change. Plurals (e.g., "1 item" vs "2 items") format correctly. No hardcoded text remains in the component. |
+| 8 | **Responsible Snapshot Testing**<br>Add a snapshot test to a stable, complex component (e.g., a data table). Intentionally change a CSS class, watch the test fail, review the diff, and update the snapshot *only* if the change was intentional. | Snapshot catches the UI change. You understand how to review diffs critically rather than blindly running `-u` to update all snapshots. |
+| 9 | **DX: Pre-commit Hooks**<br>Install `husky` and `lint-staged`. Configure it to run `eslint --fix` and `tsc --noEmit` *only* on staged files before a commit is allowed. | Committing code with a TypeScript error or linting violation is blocked. The process takes <2 seconds, preserving DX. |
+| 10| **Parallel Frontend CI Pipeline**<br>Create a GitHub Actions workflow for your frontend app. Use matrix strategies or parallel jobs to run `npm run lint`, `npm run type-check`, and `npm run test` simultaneously. | Pipeline completes in under 2 minutes. A failing type check blocks the merge, even if tests pass. |
