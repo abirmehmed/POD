@@ -1,0 +1,31 @@
+# Advanced SQL & Database Performance: Set 3
+## Concurrency, Transactions, Locking & Isolation Levels
+
+## 📘 10 Conceptual Questions
+1. **ACID Deep Dive & Physical Implementation:** Atomicity, Consistency, Isolation, Durability are concepts, but how does the database *physically* guarantee them? Explain the role of Write-Ahead Logs (WAL), Redo logs, and Undo logs in ensuring transactions survive crashes.
+2. **The Four Isolation Levels:** Compare Read Uncommitted, Read Committed, Repeatable Read, and Serializable. What specific anomalies (Dirty Reads, Non-Repeatable Reads, Phantom Reads) does each level prevent, and what is the performance cost of moving up the isolation ladder?
+3. **MVCC (Multi-Version Concurrency Control):** How do modern databases (like PostgreSQL and MySQL/InnoDB) allow readers to *never* block writers? Explain how MVCC uses transaction IDs and row versions to provide consistent snapshots without locking.
+4. **Pessimistic vs. Optimistic Locking:** When should you use `SELECT ... FOR UPDATE` (Pessimistic) versus a `version` column (Optimistic)? How do you handle the `StaleObjectException` when two users try to update the same record simultaneously?
+5. **Deadlocks: Anatomy & Prevention:** What exactly causes a deadlock at the database level? How does the database detect it, and what is the application-level best practice (e.g., consistent access order) to prevent deadlocks from happening in the first place?
+6. **Row-Level vs. Table-Level Locking & Indexes:** Why does running an `UPDATE` or `SELECT ... FOR UPDATE` *without* a `WHERE` clause that uses an index cause the database to lock the entire table? How do indexes dictate the granularity of locks?
+7. **The "Lost Update" Problem:** How does it happen when two transactions read the same row, calculate a new value, and write it back? How do isolation levels or explicit locking prevent the second write from silently overwriting the first?
+8. **Nested Transactions & Savepoints:** How do relational databases handle nested transactions? Explain the concept of "Savepoints" and how Laravel’s `DB::transaction()` handles rolling back an inner transaction without aborting the outer one.
+9. **Long-Running Transaction Anti-Pattern:** Why is it dangerous to put heavy computations, HTTP API calls, or queue dispatches *inside* a `DB::transaction()` block? How does this lead to connection pool exhaustion and lock contention?
+10. **Distributed Transactions & Two-Phase Commit (2PC):** When a single database transaction spans multiple services/databases, why is the XA/2PC protocol usually considered an anti-pattern in modern microservices? Why is the Saga pattern preferred?
+
+---
+
+## ️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Prevent Inventory Overselling (Pessimistic)**<br>Simulate 10 concurrent requests buying the last item. Implement `lockForUpdate()` on the product row inside a transaction. Verify only 1 request succeeds and stock never drops below 0. | Concurrent requests are queued by the DB lock. No race conditions. Stock is exactly 0. |
+| 2 | **Implement Optimistic Locking**<br>Add a `version` column to the `products` table. When saving, append `WHERE version = ?`. If 0 rows are affected, throw a `StaleObjectException`. Simulate two concurrent updates and catch the exception. | Second update fails gracefully with a custom exception. Data is not overwritten silently. User is prompted to retry. |
+| 3 | **Isolation Level Experiment**<br>Open two DB connections. Set Connection A to `Read Committed` and Connection B to `Repeatable Read`. Start a transaction in A, update a row (don't commit). Read the row in B. Observe the differences. | You physically see the "Dirty Read" or "Non-Repeatable Read" anomaly based on the isolation level. |
+| 4 | **Intentional Deadlock Creation & Fix**<br>Write a script that updates Row A then Row B. Write another that updates Row B then Row A simultaneously. Capture the deadlock error. Fix it by enforcing a consistent lock acquisition order (always lock lowest ID first). | Deadlock is triggered and logged. The fix ensures both scripts lock in the exact same order, eliminating the deadlock. |
+| 5 | **Index Impact on Lock Scope**<br>Run an `UPDATE` query filtering by a non-indexed column. Check the number of locked rows (using `performance_schema` or `pg_stat_activity`). Add an index, run it again, and compare the locked rows. | Without index: DB locks thousands of rows (or whole table). With index: DB locks only the exact rows modified. |
+| 6 | **Refactor Long-Running Transaction**<br>Find or create a `DB::transaction()` that sends an email or calls an external API inside the block. Move the API call *outside* the transaction. Verify the transaction commits faster and connections are released sooner. | Transaction duration drops from seconds to milliseconds. Connection pool metrics show fewer active connections under load. |
+| 7 | **Dispatching Events after Commit**<br>Trigger a queue job or event *inside* a transaction that inserts a record. Notice the job sometimes processes before the record exists (race condition). Refactor using Laravel's `afterCommit()` on the job/event. | Queue job only fires *after* the DB transaction successfully commits. Race condition is eliminated. |
+| 8 | **Savepoint / Nested Transaction Test**<br>Nest two `DB::transaction()` blocks. Rollback the inner block using a simulated failure. Verify the outer block still commits successfully, and the inner changes are reverted. | Database state reflects the outer commit, but the inner operations are completely undone. |
+| 9 | **Lost Update Prevention in Profile**<br>Simulate two users updating the same user profile simultaneously. Implement a check (either pessimistic lock or conditional update) to ensure the second user sees the latest data before saving. | Second user cannot overwrite the first user's changes without seeing them first. |
+| 10| **Connection Pool Stress Test**<br>Simulate 50 concurrent requests, each holding a transaction open for 3 seconds. Observe the database connection limit. Tune the pool size and optimize transaction duration to handle the load without "Too many connections" errors. | Pool handles the load smoothly. No connection timeouts. Metrics show efficient connection reuse. |
