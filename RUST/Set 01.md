@@ -11,6 +11,7 @@
 7. **Shadowing vs. Mutability (`let mut`):** What is variable shadowing (e.g., `let x = 5; let x = x + 1;`)? How does it differ from making a variable mutable, and why is it useful for transforming data types (e.g., parsing a string to an integer and keeping the same variable name)?
 8. **Structs and `impl` Blocks:** Rust does not have classes or inheritance. How do you model object-oriented concepts using `struct` and `impl` blocks? What is the difference between an associated function (like `::new()`) and a method (which takes `&self`)?
 9. **The `Clone` Trait:** If you *want* to duplicate Heap-allocated data (like a `String`), how do you do it explicitly? Why does Rust force you to call `.clone()` instead of doing it implicitly, and what is the performance implication?
+
 10. **The Borrow Checker as a Mentor:** Beginners often fight the Borrow Checker. How should you reframe your mindset? Instead of viewing compiler errors as annoyances, how do they actually guide you toward safer, more predictable architecture?
 
 ---
