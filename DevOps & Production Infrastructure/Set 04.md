@@ -1,0 +1,31 @@
+# DevOps & Production Infrastructure: Set 4
+## Infrastructure as Code (IaC), State Management & Cloud Provisioning
+
+## 📘 10 Conceptual Questions
+1. **Declarative vs. Imperative IaC:** What is the fundamental difference between writing a Bash script to create a server (imperative) vs. defining its desired state in Terraform/Pulumi (declarative)? Why is declarative better for long-term maintenance and idempotency?
+2. **The State File & Remote Backends:** What is the `.tfstate` (or equivalent) file, and why is it the single most critical file in IaC? Why must it be stored in a remote backend (e.g., S3 + DynamoDB) rather than committed to Git?
+3. **Infrastructure Drift:** What is configuration drift, and how does it happen? How does IaC detect when a resource has been manually changed in the cloud console outside of the code, and what are the strategies to resolve it safely?
+4. **Modules & Reusability (DRY):** Why is copy-pasting infrastructure code across `dev`, `staging`, and `prod` an anti-pattern? How do modules encapsulate logic, enforce standards, and prevent accidental misconfigurations?
+5. **Secrets in Infrastructure:** Why should you never hardcode passwords or API keys in your IaC files? How do you integrate with external secret managers (AWS Secrets Manager, Vault) so that the IaC only references the secret without exposing it in the state file?
+6. **Plan/Apply Workflow & CI Integration:** Why is running `plan` before `apply` non-negotiable in a team environment? How do you integrate this into a GitHub/GitLab pipeline to show a diff of infrastructure changes on a Pull Request?
+7. **Immutable vs. Mutable Infrastructure:** In the context of IaC, what is the difference between updating a server in-place (mutable) vs. destroying it and creating a new one (immutable)? When does each approach make sense for a Laravel app?
+8. **Policy as Code (PaC):** How do you prevent a junior developer from accidentally provisioning a $10,000/month database or a public S3 bucket? Explain tools like Open Policy Agent (OPA) or Sentinel that enforce guardrails *before* resources are created.
+9. **Workspaces & Environment Isolation:** How do you manage multiple environments (Dev, Prod) with the same code? Compare using separate state files, workspaces, or entirely separate directories, and explain the risks of cross-contamination.
+10. **Provisioners & Anti-Patterns:** Why are `local-exec` and `remote-exec` provisioners (running bash scripts during resource creation) considered an anti-pattern in modern IaC? How should you handle bootstrapping instead (e.g., cloud-init, AMIs, Docker)?
+
+---
+
+## 🛠️ 10 Practical Tasks
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Provision Core Network**<br>Use Terraform/Pulumi to provision a foundational network (VPC, public/private subnets, internet gateway, route tables) in AWS/GCP/Azure. Do not use the web console. | `terraform apply` creates all networking resources. Outputs show VPC ID and subnet IDs. `terraform destroy` removes them cleanly. |
+| 2 | **Remote State Configuration**<br>Configure a remote backend (e.g., AWS S3 bucket + DynamoDB table for state locking). Migrate your local state to this backend. Verify locking prevents concurrent modifications. | State file is in S3, not local disk. DynamoDB prevents two `apply` commands from running at the same time. |
+| 3 | **Create a Reusable Module**<br>Abstract a resource (e.g., an S3 bucket, RDS instance, or Droplet) into a reusable module. Accept inputs like `name`, `size`, and `environment`. Use it in your main config. | Module is in a separate directory. Main config passes variables to it. Module can be reused for both `dev` and `prod` by changing variables. |
+| 4 | **Drift Detection Exercise**<br>Apply your infrastructure. Go into the cloud console and manually change a setting (e.g., change a security group rule or instance type). Run `plan` and observe the diff. | `plan` clearly shows the manual change and proposes reverting it to match the code. You understand how drift is surfaced. |
+| 5 | **Secrets Integration**<br>Provision a database (e.g., RDS) but pull the master password from a Secrets Manager (or use a secure random generator) instead of hardcoding it in `main.tf`. Output the endpoint, but never the password. | IaC code contains no plaintext passwords. State file is encrypted at rest. Database is accessible using the secret. |
+| 6 | **CI Pipeline for IaC**<br>Configure a GitHub Action that runs `terraform fmt`, `terraform validate`, and `terraform plan` on every Pull Request. Post the plan output as a comment on the PR. | Opening a PR automatically triggers the pipeline. PR comment shows exactly what will be created/changed. `apply` only runs on merge to `main`. |
+| 7 | **Environment Workspaces**<br>Create `dev` and `prod` workspaces. Apply the same code to both, passing different variables (e.g., `instance_size = "t3.micro"` for dev, `"t3.large"` for prod). Verify state isolation. | `terraform workspace list` shows both. Switching workspaces changes the state file. Resources in `dev` are completely separate from `prod`. |
+| 8 | **Enforce Tagging Policy**<br>Write a policy (using AWS Service Control Policies, OPA, or simple variable validation) that requires `Environment`, `Project`, and `Owner` tags on all resources. Try to apply without tags and verify it fails. | Missing tags cause `plan` or `apply` to fail. All successfully created resources have the required tags visible in the cloud console. |
+| 9 | **Monolithic to Modular Refactor**<br>Take a single, large `main.tf` file and refactor it into logical modules (`networking`, `database`, `compute`). Ensure `terraform plan` shows zero changes after the refactor. | Code is organized in folders. Root config only calls modules. No infrastructure is destroyed or recreated during the refactor. |
+| 10| **Immutable Rebuild Test**<br>Run `terraform destroy` on a non-critical resource (like a test instance), then immediately run `terraform apply`. Verify it rebuilds perfectly to the exact previous state without manual intervention. | Rebuild is 100% automated. Configuration matches the original exactly. Proves the "cattle, not pets" philosophy. |
