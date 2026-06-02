@@ -1,0 +1,32 @@
+# Advanced React/Vue Patterns: Set 1
+## Advanced State & Reactivity Mechanics
+
+## 📘 10 Conceptual Questions
+1. **Reactivity Models Under the Hood:** How does Vue 3’s `Proxy`-based reactivity fundamentally differ from React’s immutable state updates? What are the performance implications of each when dealing with deeply nested objects or large arrays?
+2. **State Colocation Principle:** Why is lifting state "all the way up" to a global store (like Redux or Pinia) an anti-pattern for localized UI state? How does keeping state as close to where it’s used as possible improve performance and maintainability?
+3. **Derived State Pitfalls:** What causes "cascading renders" or infinite loops when calculating derived state? How do you correctly implement memoized derived state (e.g., `computed` in Vue, `useMemo` in React) without over-memoizing and causing memory overhead?
+4. **Atomic State vs. Monolithic Stores:** Compare monolithic global stores (one big object) with atomic state models (e.g., Jotai, Recoil, or granular Pinia stores). Why does atomic state solve the "unnecessary re-render" problem in React, and how does Vue’s fine-grained reactivity make this less of an issue?
+5. **The "Zombie Child" Problem:** In React, how can a component that is in the process of unmounting still trigger a state update, leading to memory leaks or warnings? How do cleanup functions in `useEffect` prevent this?
+6. **Batching in React vs. Vue:** How does React 18’s automatic batching differ from Vue’s next-tick batching? Why does understanding the microtask queue matter when you need to read the DOM immediately after a state change?
+7. **Immutability without the Boilerplate:** Why is `state.value.nested.prop = true` an anti-pattern in React but perfectly fine in Vue? How do tools like Immer (React) or Vue’s `reactive` proxy abstract this complexity, and what are their performance trade-offs?
+ a Custom Store from Scratch:** How would you build a minimal version of Zustand (React) or Pinia (Vue) using only native framework primitives? What are the essential pieces (state, actions, subscribers) required to make it work?
+9. **Server State vs. Client State Boundary:** Why is treating API responses as "client state" (putting them in Redux/Pinia) a fundamental architectural mistake? How do libraries like TanStack Query or Vue Query manage caching, garbage collection, and background refetching automatically?
+10. **State Hydration Mismatches:** When using SSR (Next.js/Nuxt), what causes a hydration mismatch related to state (e.g., using `Date.now()` or `window` during initial render)? How do you safely defer client-only state initialization?
+
+---
+
+## 🛠️ 10 Practical Tasks
+*(Note: Implement these in your preferred framework: React or Vue 3)*
+
+| # | Task | Success Criteria |
+|---|------|------------------|
+| 1 | **Build a Mini-Store**<br>Create a custom state management hook/composable (e.g., `createStore`) from scratch without external libraries. It must support state, actions, and subscriber notifications. | Store updates trigger re-renders *only* in components that subscribe to the changed state. No external dependencies used. |
+| 2 | **Atomic State Refactor**<br>Take a component with a large, monolithic state object (e.g., a complex form). Refactor it using atomic state (Jotai/Recoil for React, or granular `ref`/`computed` for Vue) so that typing in one field does not re-render unrelated parts of the form. | React DevTools (or Vue Devtools) shows that only the specific input component re-renders on keystroke, not the parent form. |
+| 3 | **Derived State Optimization**<br>Create a list of 10,000 items. Implement a filtered/sorted view of this list. Ensure the filtering/sorting logic is strictly memoized (`useMemo` / `computed`) and only recalculates when the filter criteria or the raw list changes, *not* on unrelated parent re-renders. | Profiler shows the derived calculation runs exactly 0 times when unrelated state updates. |
+| 4 | **State Colocation Audit**<br>Find a piece of global state in your project that is only used by 1-2 components. Move it down to the lowest common ancestor of those components. | Global store shrinks. Components are more portable. No prop-drilling beyond 1-2 levels. |
+| 5 | **Safe Async State Updates**<br>Create a component that fetches data on mount. Implement a cleanup function that sets an `isMounted` flag to `false` on unmount, preventing state updates if the component unmounts before the fetch resolves. | React warning "Can't perform a React state update on an unmounted component" (or Vue equivalent) is completely eliminated. |
+ is Immutability (React) or Reactivity (Vue)**<br>*(React)*: Use `Immer` (`useImmer`) to update a deeply nested object. *(Vue)*: Use `reactive()` to update a deeply nested object. Compare the code readability and verify the UI updates correctly. | Deeply nested state updates are clean and readable. No manual spreading (`...state`) or reassignment hacks are needed. |
+| 7 | **TanStack Query / Vue Query Integration**<br>Replace a manual `onMounted`/`useEffect` data fetch with a dedicated query hook. Enable `staleTime`, `cacheTime`, and `refetchOnWindowFocus`. | Data is cached across route navigations. Stale data is served instantly while a background fetch occurs. No manual `isLoading` boolean juggling. |
+| 8 | **Custom Form State Composable/Hook**<br>Build a `useForm` hook/composable that manages field values, touched state, errors, and a `submit` handler. Do not use a library like React Hook Form or Vee-Validate for this exercise. | Hook cleanly separates form logic from the UI. It can be reused across multiple different form components. |
+| 9 | **Hydration Mismatch Fix**<br>Intentionally render a component that relies on `window.innerWidth` or `localStorage` during SSR. Observe the hydration warning. Fix it by deferring the render of that specific UI until `onMounted` / `useEffect` (client-side only). | Server renders a safe fallback (e.g., a skeleton or default width). Client takes over seamlessly without console warnings or UI flickering. |
+| 10| **Reactivity/Render Profiling**<br>Use the React Profiler or Vue Devtools Performance tab to record a user interaction (e.g., typing in a search box). Identify any components that are rendering unnecessarily and apply a fix (memoization, state colocation, or callback stabilization). | Profiler timeline shows a measurable reduction in "render time" and "components rendered" for that specific interaction. |
