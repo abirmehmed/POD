@@ -10,7 +10,8 @@
 6. **Structured Logging & Observability (`tracing`):** Why is the `tracing` crate preferred over the standard `log` crate in modern Rust? Explain the difference between *events* (something happened) and *spans* (a period of time with a beginning and end), and how they enable distributed tracing.
 7. **Async Database Connection Pooling:** How does `sqlx::PgPool` manage connections under the hood? Why is it critical to clone the pool (which is cheap, as it's an `Arc` under the hood) and pass it to request handlers, rather than creating a new connection per request?
 8. **Streaming Responses (SSE & Body Streams):** How do you stream data to a client in Rust without loading the entire payload into memory? Explain how `axum::response::sse` (Server-Sent Events) or `tokio_util::io::ReaderStream` handles backpressure and chunked transfer encoding.
-Error Mapping (`IntoResponse`):** How do you elegantly map a custom Rust error enum (e.g., `DatabaseError`, `ValidationError`) to specific HTTP status codes (500, 400) and JSON responses without cluttering the handler logic?
+Error Mapping (`IntoResponse`):
+9. ** How do you elegantly map a custom Rust error enum (e.g., `DatabaseError`, `ValidationError`) to specific HTTP status codes (500, 400) and JSON responses without cluttering the handler logic?
 10. **Rust vs. PHP Performance Reality:** When you replace a PHP/Laravel endpoint with a Rust/Axum endpoint, where do the massive performance gains actually come from? (Hint: It's not just "Rust is faster"; think about JIT overhead, GC pauses, process-per-request bootstrapping, and async I/O).
 
 ---
